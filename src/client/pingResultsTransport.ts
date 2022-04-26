@@ -25,7 +25,8 @@ export class PingResultsTransport extends WithHttpTransport {
 
     const exponentialNumbersSubsequenceGenerator =
       createExponentialNumbersSubsequenceGenerator(
-        config.CLIENT.PING_RESULTS_DELIVERY_INITIAL_DELAY_BETWEEN_ATTEMPTS_MS
+        config.CLIENT.PING_RESULTS_DELIVERY_INITIAL_DELAY_BETWEEN_ATTEMPTS_MS,
+        config.CLIENT.PING_RESULTS_DELIVERY_MAX_DELAY_BETWEEN_ATTEMPTS_MS
       );
 
     while (true) {
