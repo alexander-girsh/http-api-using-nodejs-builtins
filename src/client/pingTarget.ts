@@ -1,9 +1,9 @@
 import { PingTargetParams } from '../commonTypes';
 import { delay } from './etc/lib';
-import { WithAxiosInstance } from './etc/mixins/withAxiosInstance';
+import { WithHttpTransport } from './etc/mixins/withHttpTransport';
 import { PingResultsTransport } from './pingResultsTransport';
 
-export class PingTarget extends WithAxiosInstance {
+export class PingTarget extends WithHttpTransport {
   readonly URL: PingTargetParams['URL'];
   readonly PING_INTERVAL_MS: PingTargetParams['PING_INTERVAL_MS'];
   private currentPingRequestNumber = 0;
@@ -61,12 +61,12 @@ export class PingTarget extends WithAxiosInstance {
    */
   async getTargetResponseTime() {
     const requestStartedAtTimestamp = Date.now();
-    const targetResponse = await this.axiosInstance
+    const targetResponse = await this.httpTransport
       .get('/')
       .catch((e: Error) => e);
 
     if (targetResponse instanceof Error) {
-      console.error(`origin down: ${this.URL}`);
+      console.error(`origin unreachable: ${this.URL}`);
       return null;
     }
 

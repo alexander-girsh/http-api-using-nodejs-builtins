@@ -1,9 +1,10 @@
-import { WithAxiosInstance } from './etc/mixins/withAxiosInstance';
+import { WithHttpTransport } from './etc/mixins/withHttpTransport';
 import { config } from '../commonConfig';
 import { PingResult } from '../commonTypes';
 import { createExponentialNumbersSubsequenceGenerator, delay } from './etc/lib';
+import { HttpTransportError } from './etc/httpTransport';
 
-export class PingResultsTransport extends WithAxiosInstance {
+export class PingResultsTransport extends WithHttpTransport {
   protected totalRequestsCount = 0;
   protected successfulRequestsCount = 0;
   protected serverResponseTimeoutsCount = 0;
@@ -11,8 +12,9 @@ export class PingResultsTransport extends WithAxiosInstance {
 
   constructor() {
     super({
-      baseURL: `${config.SERVER_PROTOCOL}://${config.SERVER_HOST}:${config.SERVER_PORT}/`,
-      timeout: config.CLIENT_PING_RESULTS_DELIVERY_TIMEOUT_MS
+      // https protocol is not supported according the task
+      baseURL: `http://${config.SERVER.HOST}:${config.SERVER.PORT}/`,
+      timeout: config.CLIENT.PING_RESULTS_DELIVERY_TIMEOUT_MS
     });
   }
 
@@ -23,22 +25,22 @@ export class PingResultsTransport extends WithAxiosInstance {
 
     const exponentialNumbersSubsequenceGenerator =
       createExponentialNumbersSubsequenceGenerator(
-        config.CLIENT_PING_RESULTS_DELIVERY_INITIAL_DELAY_BETWEEN_ATTEMPTS_MS
+        config.CLIENT.PING_RESULTS_DELIVERY_INITIAL_DELAY_BETWEEN_ATTEMPTS_MS
       );
 
     while (true) {
       currentDeliveryAttempt++;
       this.totalRequestsCount++;
 
-      const serverResponse = await this.axiosInstance
-        .post(config.SERVER_ADD_PING_RESULT_ENDPOINT, {
+      const serverResponse = await this.httpTransport
+        .post(config.SERVER.ADD_PING_RESULT_ENDPOINT, {
           ...pingResult,
           deliveryAttempt: currentDeliveryAttempt
         } as PingResult)
-        .catch((e: Error & { status: number }) => e);
+        .catch((e: HttpTransportError) => e);
 
-      if (serverResponse instanceof Error) {
-        if (serverResponse.status === 500) {
+      if (serverResponse instanceof HttpTransportError) {
+        if (serverResponse.statusCode === 500) {
           this.serverInternalErrorsCount++;
         } else {
           this.serverResponseTimeoutsCount++;
