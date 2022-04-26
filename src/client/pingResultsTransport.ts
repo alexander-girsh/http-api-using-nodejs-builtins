@@ -39,20 +39,32 @@ export class PingResultsTransport extends WithHttpTransport {
         } as PingResult)
         .catch((e: HttpTransportError) => e);
 
+      const delayBeforeNextAttempt =
+        exponentialNumbersSubsequenceGenerator.next()['value'];
+
       if (serverResponse instanceof HttpTransportError) {
+        let reasonMessage: string;
         if (serverResponse.statusCode === 500) {
+          reasonMessage = 'INTERNAL SERVER ERROR';
           this.serverInternalErrorsCount++;
         } else {
+          reasonMessage = 'TIMEOUT';
           this.serverResponseTimeoutsCount++;
         }
 
-        const delayBeforeNextAttempt =
-          exponentialNumbersSubsequenceGenerator.next()['value'];
-
         if (!delayBeforeNextAttempt) {
+          console.warn(
+            `Ping result #${pingResult.pingId} not delivered after ${
+              Date.now() - deliveryStartedAt
+            }ms and ${currentDeliveryAttempt} attempts`
+          );
           // base case which is always required for exponential grow
           break;
         }
+
+        console.warn(
+          `Ping result #${pingResult.pingId}, attempt #${currentDeliveryAttempt}, not delivered: ${reasonMessage}. Delay before next attempt: ${delayBeforeNextAttempt}ms`
+        );
 
         await delay(delayBeforeNextAttempt);
 
@@ -66,7 +78,7 @@ export class PingResultsTransport extends WithHttpTransport {
           pingResult.pingId
         } delivered successful after ${Math.trunc(
           Date.now() - deliveryStartedAt
-        )}ms`
+        )}ms and ${currentDeliveryAttempt} attempts`
       );
 
       break;

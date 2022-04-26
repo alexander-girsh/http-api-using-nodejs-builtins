@@ -85,6 +85,10 @@ export class HttpTransport {
           reject(new HttpTransportError(err.message, null, null));
         });
 
+        request.on('timeout', () => {
+          reject(new HttpTransportError(`timeout`, null, null));
+        });
+
         request.write(serializedPayload);
 
         request.end();
